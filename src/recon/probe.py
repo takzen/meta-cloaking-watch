@@ -1,6 +1,6 @@
-"""Faza 1 — rekonesans Meta Ad Library API.
+"""Faza 1, rekonesans Meta Ad Library API.
 
-Pięć pytań tak/nie, od których zależy kształt całego projektu (PLAN.md, Faza 1).
+Pięć pytań tak/nie, od których zależy kształt całego projektu (PROTOCOL.md, sekcja 9).
 To NIE jest kolektor produkcyjny. Każda sonda ma zwrócić werdykt i surowy dowód.
 
     H1  Czy API daje zasięg per kraj (a nie tylko eu_total_reach)?
@@ -15,8 +15,8 @@ Użycie:
     python -m src.recon.probe all
 
 Każde wywołanie zapisuje surową odpowiedź do data/library/recon/ i dopisuje
-hash do data/manifest.jsonl. Werdykty NIE są zapisywane automatycznie —
-wnioski wpisujemy ręcznie do docs/faza1-wyniki.md po obejrzeniu dowodu.
+hash do data/manifest.jsonl. Werdykty NIE są zapisywane automatycznie:
+wnioski zapisujemy ręcznie po obejrzeniu dowodu.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ from pathlib import Path
 
 import requests
 
-# Wersja Graph API — ZWERYFIKOWAĆ aktualną przed uruchomieniem.
+# Wersja Graph API, ZWERYFIKOWAĆ aktualną przed uruchomieniem.
 API_VERSION = os.environ.get("META_API_VERSION", "v22.0")
 ENDPOINT = f"https://graph.facebook.com/{API_VERSION}/ads_archive"
 
@@ -83,13 +83,13 @@ def token() -> str:
     if not tok:
         sys.exit(
             "Brak tokena. Ustaw META_AD_LIBRARY_TOKEN w środowisku albo w pliku .env\n"
-            "(.env jest w .gitignore — token NIGDY nie trafia do repo)."
+            "(.env jest w .gitignore, token NIGDY nie trafia do repo)."
         )
     return tok
 
 
 def save_raw(name: str, payload: dict | list) -> Path:
-    """Zapis surowej odpowiedzi + wpis do manifestu (CLAUDE.md R3, R5)."""
+    """Zapis surowej odpowiedzi + wpis do manifestu (PROTOCOL.md, sekcja 6)."""
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     path = RAW_DIR / f"{name}_{ts}.json"
@@ -116,7 +116,7 @@ def save_raw(name: str, payload: dict | list) -> Path:
 
 
 def call(params: dict, *, timeout: int = 60) -> tuple[dict, dict, int]:
-    """Zwraca (body, istotne_nagłówki, status). Nie podnosi wyjątku na 4xx/5xx —
+    """Zwraca (body, istotne_nagłówki, status). Nie podnosi wyjątku na 4xx/5xx,
     treść błędu jest tu danymi badawczymi, nie awarią."""
     p = dict(params)
     p["access_token"] = token()
@@ -167,13 +167,13 @@ def _probe(name: str, params: dict, *, note: str = "") -> dict:
 
 
 # --------------------------------------------------------------------------- #
-# H1 — zasięg per kraj                                                          #
+# H1, zasięg per kraj                                                          #
 # --------------------------------------------------------------------------- #
 
 def h1(args) -> None:
-    """Instrat: 'Meta nie umożliwia uzyskania zasięgu wyłącznie dla Polski' (s. 4).
-    Sprawdzamy, czy age_country_gender_reach_breakdown / total_reach_by_location
-    faktycznie tego nie dają. Jeśli dają — główne źródło błędu w Części 1 znika."""
+    """Dotychczasowe badania przyjmowały, że API nie pozwala uzyskać zasięgu
+    wyłącznie dla Polski. Sprawdzamy, czy pola age_country_gender_reach_breakdown
+    i total_reach_by_location faktycznie tego nie dają."""
     rec = _probe(
         "h1_reach_per_country",
         {
@@ -187,7 +187,7 @@ def h1(args) -> None:
     )
     data = rec["response"].get("data") or []
     if not data:
-        print("\nWERDYKT: brak danych — sprawdź zapytanie i uprawnienia tokena.")
+        print("\nWERDYKT: brak danych, sprawdź zapytanie i uprawnienia tokena.")
         return
 
     have_breakdown = sum(1 for a in data if a.get("age_country_gender_reach_breakdown"))
@@ -208,24 +208,25 @@ def h1(args) -> None:
 
     if have_breakdown or have_by_loc:
         print(
-            "\nWERDYKT H1: TAK — API zwraca rozbicie zasięgu. Sprawdź ręcznie, czy da się "
-            "z niego wyciąć samą Polskę. Jeśli tak, zarzut B2 jest naprawialny."
+            "\nWERDYKT H1: TAK. API zwraca rozbicie zasięgu. Sprawdź ręcznie, czy da się "
+            "z niego wyciąć samą Polskę. Jeśli tak, przejścia z zasięgu unijnego "
+            "na krajowy nie trzeba modelować."
         )
     else:
         print(
-            "\nWERDYKT H1: NIE — tylko eu_total_reach. Każde przejście EU->PL wymaga "
-            "jawnego modelu z własnym przedziałem (albo rezygnacji z Toru B)."
+            "\nWERDYKT H1: NIE. tylko eu_total_reach. Każde przejście EU->PL wymaga "
+            "jawnego modelu z własnym przedziałem (albo rezygnacji z oszacowań skali)."
         )
 
 
 # --------------------------------------------------------------------------- #
-# H2 — treść reklam usuniętych                                                  #
+# H2, treść reklam usuniętych                                                  #
 # --------------------------------------------------------------------------- #
 
 def h2(args) -> None:
-    """Instrat przyjął 'usunięta przez Metę = oszukańcza' jako ground truth (s. 9),
-    bez walidacji. Jeśli unmask_removed_content odsłania treść, walidację da się
-    zrobić ręcznie na próbce — bez niczyjej zgody."""
+    """Klasyfikator 'usunięta przez Metę = oszukańcza' bywa przyjmowany jako ground
+    truth bez walidacji. Jeśli unmask_removed_content odsłania treść, walidację
+    da się zrobić ręcznie na próbce, bez niczyjej zgody."""
     base = {
         "search_terms": args.terms,
         "ad_reached_countries": "['PL']",
@@ -244,23 +245,24 @@ def h2(args) -> None:
     n_off, n_on = bodies(off), bodies(on)
     print(f"\nrekordów z ad_creative_bodies:  bez flagi {n_off}  |  z flagą {n_on}")
     if "error" in on["response"]:
-        print("\nWERDYKT H2: NIE — parametr odrzucony. Klasyfikator Instratu pozostaje "
-              "niewalidowalny, więc NIE WOLNO go używać (CLAUDE.md R1/R8).")
+        print("\nWERDYKT H2: NIE. Parametr odrzucony, klasyfikator pozostaje "
+              "niewalidowalny, więc nie jest używany (PROTOCOL.md, sekcja 11).")
     elif n_on > n_off:
-        print("\nWERDYKT H2: TAK — flaga odsłania dodatkowe treści. Walidacja "
-              "klasyfikatora na próbce N=300-500 jest wykonalna (PLAN.md, Faza 9).")
+        print("\nWERDYKT H2: TAK. flaga odsłania dodatkowe treści. Walidacja "
+              "klasyfikatora na próbce N=300-500 jest wykonalna.")
     else:
-        print("\nWERDYKT H2: NIEROZSTRZYGNIĘTE — brak różnicy na tej próbce. "
+        print("\nWERDYKT H2: NIEROZSTRZYGNIĘTE, brak różnicy na tej próbce. "
               "Powtórz na zapytaniu, które na pewno zawiera reklamy usunięte.")
 
 
 # --------------------------------------------------------------------------- #
-# H3 — limity                                                                   #
+# H3, limity                                                                   #
 # --------------------------------------------------------------------------- #
 
 def h3(args) -> None:
-    """Instrat: ~50 tys. rekordów/dobę na osobę + niereprodukowalny 'nieznany błąd'
-    (s. 6, 8). Mierzymy realną przepustowość i próbujemy odtworzyć błąd."""
+    """Publikowane szacunki mówią o ok. 50 tys. rekordów na dobę na użytkownika oraz
+    o nieokreślonych błędach przerywających pobieranie. Mierzymy realną
+    przepustowość i próbujemy odtworzyć błąd."""
     print(f"\n=== h3_rate_limits ===\nCel: {args.max_records} rekordów, strona={args.page_size}")
     params = {
         "search_terms": args.terms,
@@ -311,17 +313,17 @@ def h3(args) -> None:
         "elapsed_s": round(elapsed, 1), "records_per_hour": round(rate), "pages_log": log,
     })
     print("\nWERDYKT H3: porównaj z deklarowanym limitem ~50 tys./dobę. Sprawdź nagłówki "
-          "x-app-usage — czy limit jest per token, czy per aplikacja (B13).")
+          "x-app-usage, czy limit jest per token, czy per aplikacja.")
 
 
 # --------------------------------------------------------------------------- #
-# H4 — warianty kreacji                                                         #
+# H4, warianty kreacji                                                         #
 # --------------------------------------------------------------------------- #
 
 def h4(args) -> None:
-    """Instrat (s. 7): API wystawia tylko pojedyncze warianty reklam, a scamerzy
-    chowają wariant oszukańczy wśród neutralnych. To mechanizm M2. Sprawdzamy,
-    ile wariantów zwraca API dla wskazanego ad_id."""
+    """Hipoteza: API wystawia tylko pojedyncze warianty reklam, co pozwala ukryć
+    wariant oszukańczy wśród neutralnych. To mechanizm M2 (CODEBOOK.md).
+    Sprawdzamy, ile wariantów zwraca API dla wskazanego ad_id."""
     if not args.ad_id:
         sys.exit(
             "H4 wymaga --ad-id.\n"
@@ -353,7 +355,7 @@ def h4(args) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# H5 — beneficiary_payers                                                       #
+# H5, beneficiary_payers                                                       #
 # --------------------------------------------------------------------------- #
 
 def h5(args) -> None:
@@ -380,14 +382,14 @@ def h5(args) -> None:
     if filled:
         print("przykład:", json.dumps(filled[0]["beneficiary_payers"], ensure_ascii=False)[:400])
     print("\nWERDYKT H5: to tylko surowy odsetek na małej próbce. Do publikacji "
-          "policzyć przedział Wilsona na próbie losowej (CLAUDE.md R1).")
+          "policzyć przedział Wilsona na próbie losowej.")
 
 
 PROBES = {"h1": h1, "h2": h2, "h3": h3, "h4": h4, "h5": h5}
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Faza 1 — rekonesans Ad Library API")
+    ap = argparse.ArgumentParser(description="Faza 1, rekonesans Ad Library API")
     ap.add_argument("probe", choices=[*PROBES, "all"])
     ap.add_argument("--terms", default="inwestycja",
                     help="search_terms; API wymaga niepustego zapytania")
@@ -404,7 +406,7 @@ def main() -> None:
     if args.probe == "all":
         for name in ("h1", "h2", "h5"):
             PROBES[name](args)
-        print("\nH3 i H4 uruchom osobno — H3 zużywa budżet zapytań, H4 wymaga --ad-id.")
+        print("\nH3 i H4 uruchom osobno, H3 zużywa budżet zapytań, H4 wymaga --ad-id.")
     else:
         PROBES[args.probe](args)
 

@@ -1,13 +1,11 @@
-# docs/ to prywatny katalog roboczy — materiały źródłowe, notatki, szkice,
-# logi dyskusji. Nic z tego nie trafia do repo.
+# Prywatny katalog roboczy: materiały źródłowe i notatki.
 /docs
 
-# Pliki robocze projektu — zasady pracy i plan. Publiczne jest README,
-# a docelowo PROTOCOL.md (pre-rejestracja) i wyniki.
+# Pliki robocze projektu. Publiczne są README, PROTOCOL.md, CODEBOOK.md i wyniki.
 /CLAUDE.md
 /PLAN.md
 
-# Dowody i snapshoty — append-only, poza gitem (rozmiar + dane osób trzecich).
+# Dowody i snapshoty: append-only, poza gitem (rozmiar + dane osób trzecich).
 # Wersjonujemy wyłącznie manifest z hashami, bo on jest łańcuchem integralności.
 data/evidence/*
 data/library/*
@@ -18,7 +16,7 @@ data/landing/*
 out/*
 !out/.gitkeep
 
-# Sekrety — token do Ad Library API NIGDY nie trafia do repo
+# Sekrety. Token do Ad Library API NIGDY nie trafia do repo.
 .env
 *.token
 secrets/
