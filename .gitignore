@@ -1,1 +1,35 @@
+# docs/ to prywatny katalog roboczy — materiały źródłowe, notatki, szkice,
+# logi dyskusji. Nic z tego nie trafia do repo.
 /docs
+
+# Pliki robocze projektu — zasady pracy i plan. Publiczne jest README,
+# a docelowo PROTOCOL.md (pre-rejestracja) i wyniki.
+/CLAUDE.md
+/PLAN.md
+
+# Dowody i snapshoty — append-only, poza gitem (rozmiar + dane osób trzecich).
+# Wersjonujemy wyłącznie manifest z hashami, bo on jest łańcuchem integralności.
+data/evidence/*
+data/library/*
+data/landing/*
+!data/**/.gitkeep
+
+# Wyniki generowane
+out/*
+!out/.gitkeep
+
+# Sekrety — token do Ad Library API NIGDY nie trafia do repo
+.env
+*.token
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# System
+.DS_Store
+Thumbs.db
