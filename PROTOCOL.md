@@ -153,6 +153,37 @@ niezawodności interfejsu, wymaganej przez art. 39 DSA.
 
 Implementacja: `src/schedule.py`. Reguły utrwalone testami w `tests/test_schedule.py`.
 
+### P-02. Przy obserwacji odczytujemy także identyfikator konta nadawcy
+
+**Data:** 2026-09-18
+**Charakter:** uzupełnienie procedury zbierania, sekcja 6, przed rozpoczęciem zbierania
+**Zebranych obserwacji w momencie wprowadzenia:** zero
+
+Sekcja 6 zakładała, że przy obserwacji wystarczy odczytać identyfikator Biblioteki
+Reklam. To założenie jest niewystarczające.
+
+Endpoint `ads_archive` nie udostępnia filtra po identyfikatorze pojedynczej reklamy.
+Filtruje między innymi po `search_page_ids`, czyli po koncie nadawcy. Rekord
+konkretnej reklamy odnajdujemy więc pośrednio: pobieramy reklamy danego nadawcy
+i wyszukujemy wśród nich nasz identyfikator.
+
+W konsekwencji przy każdej obserwacji odczytujemy z aplikacji **dwie** wartości:
+
+1. identyfikator Biblioteki Reklam,
+2. identyfikator konta nadawcy (`page_id`).
+
+Obserwacja bez `page_id` nie może zostać odpytana i jest traktowana jak obserwacja
+bez odczytanego identyfikatora, czyli trafia do rejestru nieudanych odczytów
+(sekcja 10, punkt 1). Implementacja zawodzi wtedy głośno, zamiast po cichu
+produkować fałszywe M4.
+
+**Status ograniczenia: do weryfikacji w rekonesansie (sekcja 9).** Jeżeli okaże się,
+że istnieje bezpośrednie odpytanie po identyfikatorze reklamy, ścieżka przez konto
+nadawcy pozostanie poprawna, tylko mniej ekonomiczna. Wynik weryfikacji zostanie
+dopisany tutaj.
+
+Implementacja: `src/recheck.py`. Reguły utrwalone testami w `tests/test_recheck.py`.
+
 ## 13. Etyka
 
 Zasady w [README](README.md#etyka-i-granice). W skrócie: zero interakcji transakcyjnej z infrastrukturą oszustów, redakcja danych osób prywatnych przed publikacją, defangowanie adresów, jawny opis napięcia między badaniem a regulaminem platformy, responsible disclosure do Mety przed publikacją, równoległy wniosek o dostęp badawczy z art. 40 DSA.
