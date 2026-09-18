@@ -84,7 +84,7 @@ analysis/     skrypty produkujące liczby do publikacji
 - [x] Zasady projektu i plan prac
 - [x] Sondy rekonesansowe Ad Library API: napisane
 - [ ] Rekonesans uruchomiony (**bramka go/no-go**)
-- [ ] `PROTOCOL.md` zamrożony i otagowany
+- [x] `PROTOCOL.md` zamrożony i otagowany
 - [ ] Zbieranie danych
 - [ ] Wyniki
 
