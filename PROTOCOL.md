@@ -116,7 +116,42 @@ Liczba i przyczyny wykluczeń są raportowane. Odsetek wykluczeń powyżej 25% t
 
 Każde odstępstwo od sekcji 1-11 jest dopisywane tutaj, z datą, opisem i uzasadnieniem, **przed** albo niezwłocznie po jego zaistnieniu. Pusta sekcja oznacza brak odstępstw.
 
-*(brak wpisów)*
+### P-01. Okna tolerancji dla punktów pomiaru
+
+**Data:** 2026-09-18
+**Charakter:** doprecyzowanie sekcji 7, przed rozpoczęciem zbierania danych
+**Zebranych obserwacji w momencie wprowadzenia:** zero
+
+Sekcja 7 wymienia momenty pomiaru, ale nie określa, jak duże spóźnienie jeszcze
+oznacza pomiar w danym punkcie. Bez tego odpytanie wykonane dziesięć godzin po
+obserwacji dałoby się zapisać jako pomiar t+1h, co jest niedopuszczalne.
+
+Ustalamy okna ważności. Pomiar punktu jest ważny w przedziale od `obserwacja + odstęp`
+do `obserwacja + odstęp + tolerancja`:
+
+| Punkt | Odstęp | Tolerancja |
+|---|---|---|
+| t+1h | 1 h | 30 min |
+| t+6h | 6 h | 1 h |
+| t+24h | 24 h | 2 h |
+| t+72h | 72 h | 6 h |
+| t+7d | 7 dni | 12 h |
+| t+30d | 30 dni | 24 h |
+
+Tolerancja rośnie wraz z odstępem, ponieważ przy t+30d godzina nie zmienia
+interpretacji wyniku, a przy t+1h zmienia ją zasadniczo.
+
+Punkt, którego okno zamknęło się bez udanego odpytania, jest **trwale nieudany**.
+Wchodzi do trajektorii jako brak pomiaru, nigdy jako brak rekordu, i może
+doprowadzić obserwację do kategorii UNRESOLVED. Jest to skutek zamierzony:
+utrata obserwacji jest mniejszym kosztem niż dopisanie pomiaru, którego nie było.
+
+Nieudane odpytanie jest ponawiane najwyżej pięciokrotnie, z odstępem 10 minut,
+wyłącznie w granicach otwartego okna. Każda próba, także nieudana, jest zapisywana
+wraz z treścią błędu, ponieważ liczba prób i rodzaje błędów są danymi o
+niezawodności interfejsu, wymaganej przez art. 39 DSA.
+
+Implementacja: `src/schedule.py`. Reguły utrwalone testami w `tests/test_schedule.py`.
 
 ## 13. Etyka
 
